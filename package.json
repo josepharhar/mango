@@ -1,8 +1,13 @@
 {
+  "scripts": {
+    "tsc": "tsc -p .",
+    "start": "tsc -p . && node build/src/server.js"
+  },
   "dependencies": {
     "express": "^4.17.1"
   },
   "devDependencies": {
+    "@types/node": "^12.12.11",
     "typescript": "^3.7.2"
   }
 }
