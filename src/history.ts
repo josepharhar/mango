@@ -16,6 +16,7 @@ export async function getHistory(): Promise<Array<string>> {
     if (accessError) {
       console.log('failed to access history.json:\n' + accessError);
       resolve([]);
+      return;
     }
 
     fs.readFile(historyFilepath, 'utf8', (error, data) => {
