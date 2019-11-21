@@ -78,7 +78,33 @@ server.use('/file', async (req, res) => {
   send(req, absolutePath).pipe(res);
 });
 
-server.listen(port, () => console.log('listening on port ' + port + ', serving path: ' + servePath));
+let paths: Array<string> = null;
+server.use('/next', async (req, res) => {
+  const {relativePath} = parseUrl(req.url);
+  const index = paths.indexOf(relativePath);
+  if (index < 0) {
+    res.writeHead(400, {'content-type': 'text/plain'});
+    res.end('failed to find /next for path: ' + relativePath);
+    return;
+  }
+
+  const nextIndex = index >= paths.length ? 0 : index + 1;
+  const nextPath = paths[nextIndex];
+
+  res.writeHead(307, {
+    'content-type': 'text/plain',
+    'location': `/browse/${encodeURIComponent(nextPath)}`
+  });
+  res.end('/next redirecting'
+    + '\n  from: ' + relativePath
+    + '\n    to: ' + nextPath);
+});
+
+(async () => {
+  console.log('scanning for files on path "' + servePath + '" ...');
+  paths = await getRelativeFilepathsInDir(servePath, '/');
+  server.listen(port, () => console.log('listening on port ' + port + ', serving path: ' + servePath));
+})();
 
 function indexTemplate(history: Array<string>) {
   return `
@@ -126,9 +152,23 @@ function renderReader(relativePathUnencoded: string): string {
     <title>mango</title>
   </head>
   <body>
-    <a href="/next">
+    <a href="/next/${relativePath}">
       <img src="/file/${relativePath}"></img>
     </a>
   </body>
   `;
+}
+
+async function getRelativeFilepathsInDir(rootpath: string, currentpath: string): Promise<Array<string>> {
+  let relativeFilepaths = [];
+  const dirents = await readdirPromise(path.join(rootpath, currentpath), {withFileTypes: true});
+  for (const dirent of dirents) {
+    if (dirent.isDirectory()) {
+      const subFilepaths = await getRelativeFilepathsInDir(rootpath, path.join(currentpath, dirent.name));
+      relativeFilepaths = relativeFilepaths.concat(subFilepaths);
+    } else {
+      relativeFilepaths.push(path.join(currentpath, dirent.name));
+    }
+  }
+  return relativeFilepaths;
 }

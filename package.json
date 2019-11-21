@@ -1,6 +1,7 @@
 {
   "scripts": {
     "tsc": "tsc -p .",
+    "tscw": "tsc -w -p .",
     "start": "tsc -p . && node build/src/server.js"
   },
   "dependencies": {
