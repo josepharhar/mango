@@ -11,10 +11,9 @@ function wrapBody(body: string): string {
       margin: 0;
       padding: 0;
     }
-    a, a>h2 {
-      display: inline;
-    }
-    button {
+    div.menu > a,
+    div.menu > a>h2,
+    div.menu > button {
       display: inline;
     }
     div.imgcontainer {
@@ -29,7 +28,6 @@ function wrapBody(body: string): string {
     </style>
   </head>
   <body>
-    <a href="/"><h2>home</h2></a>
     ${body}
   </body>
   `;
@@ -38,16 +36,15 @@ function wrapBody(body: string): string {
 export function indexTemplate(history: Array<string>) {
   const historyListHtml = history
     .map(historyPath => {
-      return `<a href=${encodeURI(path.join('/browse', historyPath))}>${historyPath}</a>`;
+      return `<div><a href=${encodeURI(path.join('/browse', historyPath))}>${historyPath}</a></div>`;
     }).reduce((accumulator, currentValue) => {
       return currentValue + '\n' + accumulator;
     });
   return wrapBody(`
-  <body>
-    <a href="/browse"><h2>browse</h2></a>
-    <h2>last files:</h2>
-    ${historyListHtml}
-  </body>
+  <a href="/"><h2>home</h2></a>
+  <a href="/browse"><h2>browse</h2></a>
+  <h2>last files:</h2>
+  ${historyListHtml}
   `);
 }
 
@@ -60,19 +57,22 @@ export function renderDir(relativePathUnencoded: string, dirents: Array<fs.Diren
   }).reduce((accumulator, currentValue) => accumulator + currentValue);
 
   return wrapBody(`
-  <body>
-    <h2>${relativePathUnencoded}</h2>
-    <h3>${dirents.length} files</h3>
-    ${contents}
-  </body>
+  <a href="/"><h2>home</h2></a>
+  <h2>${relativePathUnencoded}</h2>
+  <h3>${dirents.length} files</h3>
+  ${contents}
   `);
 }
 
 export function renderReader(relativePathUnencoded: string): string {
   return wrapBody(`
   <body>
-    <button id="cssbutton">css</button>
-    <a href="${encodeURI(path.join('/prev', relativePathUnencoded))}"><h2>prev</h2></a>
+    <div class="menu">
+      <a href="/"><h2>home</h2></a>
+      <button id="cssbutton">css</button>
+      <a href="${encodeURI(path.join('/prev', relativePathUnencoded))}"><h2>prev</h2></a>
+      <span>${relativePathUnencoded}</span>
+    </div>
     <a href="${encodeURI(path.join('/next', relativePathUnencoded))}">
       <div id="imgcontainer" class="imgcontainer">
         <img src="${encodeURI(path.join('/file', relativePathUnencoded))}">
