@@ -7,6 +7,8 @@ import * as express from 'express';
 import * as send from 'send';
 
 import {getHistory, addToHistory} from './history';
+import {indexTemplate, renderDir, renderReader} from './renderers';
+import {parseUrl, getRelativeFilepathsInDir} from './utils';
 
 const statPromise = util.promisify(fs.stat);
 const readdirPromise = util.promisify(fs.readdir);
@@ -30,17 +32,8 @@ server.get('/', async (req, res) => {
   res.end(indexTemplate(await getHistory()));
 });
 
-function parseUrl(reqUrl: string) {
-  const parsedUrl = url.parse(reqUrl);
-  console.log('requrl: ' + reqUrl);
-  const relativePath = decodeURIComponent(parsedUrl.pathname);
-  // TODO make sure relativePath doesnt use .. for secuutiry
-  const absolutePath = path.join(servePath, relativePath);
-  return {relativePath, absolutePath};
-}
-
 server.use('/browse', async (req, res) => {
-  const {relativePath, absolutePath} = parseUrl(req.url);
+  const {relativePath, absolutePath} = parseUrl(servePath, req.url);
   let stats = null;
   try {
     stats = await statPromise(absolutePath);
@@ -74,13 +67,13 @@ server.use('/browse', async (req, res) => {
 });
 
 server.use('/file', async (req, res) => {
-  const {absolutePath} = parseUrl(req.url);
+  const {absolutePath} = parseUrl(servePath, req.url);
   send(req, absolutePath).pipe(res);
 });
 
 let paths: Array<string> = null;
 server.use('/next', async (req, res) => {
-  const {relativePath} = parseUrl(req.url);
+  const {relativePath} = parseUrl(servePath, req.url);
   const index = paths.indexOf(relativePath);
   if (index < 0) {
     res.writeHead(400, {'content-type': 'text/plain'});
@@ -105,70 +98,3 @@ server.use('/next', async (req, res) => {
   paths = await getRelativeFilepathsInDir(servePath, '/');
   server.listen(port, () => console.log('listening on port ' + port + ', serving path: ' + servePath));
 })();
-
-function indexTemplate(history: Array<string>) {
-  return `
-  <!DOCTYPE html>
-  <head>
-    <title>mango</title>
-  </head>
-  <body>
-    <h2>last files:</h2>
-    ${history.map(file => `<div>${file}</div>`)}
-    <h2>browse:</h2>
-    <a href="/browse">browse</a>
-  </body>
-  `;
-}
-
-function renderDir(relativePathUnencoded: string, dirents: Array<fs.Dirent>): string {
-  const relativePath = encodeURIComponent(relativePathUnencoded);
-
-  const contents = dirents.map(dirent => {
-    if (dirent.isDirectory()) {
-      return `<div><a href="${path.join('/browse', relativePath, dirent.name)}">${dirent.name}/</a></div>`;
-    }
-    return `<div><a href="${path.join('/browse', relativePath, dirent.name)}">${dirent.name}</a></div>`;
-  }).reduce((accumulator, currentValue) => accumulator + currentValue);
-
-  return `
-  <!DOCTYPE html>
-  <head>
-    <title>mango</title>
-  </head>
-  <body>
-    <h2>${relativePathUnencoded}</h2>
-    <h3>${dirents.length} files</h3>
-    ${contents}
-  </body>
-  `;
-}
-
-function renderReader(relativePathUnencoded: string): string {
-  const relativePath = encodeURIComponent(relativePathUnencoded);
-  return `
-  <!DOCTYPE html>
-  <head>
-    <title>mango</title>
-  </head>
-  <body>
-    <a href="/next/${relativePath}">
-      <img src="/file/${relativePath}"></img>
-    </a>
-  </body>
-  `;
-}
-
-async function getRelativeFilepathsInDir(rootpath: string, currentpath: string): Promise<Array<string>> {
-  let relativeFilepaths = [];
-  const dirents = await readdirPromise(path.join(rootpath, currentpath), {withFileTypes: true});
-  for (const dirent of dirents) {
-    if (dirent.isDirectory()) {
-      const subFilepaths = await getRelativeFilepathsInDir(rootpath, path.join(currentpath, dirent.name));
-      relativeFilepaths = relativeFilepaths.concat(subFilepaths);
-    } else {
-      relativeFilepaths.push(path.join(currentpath, dirent.name));
-    }
-  }
-  return relativeFilepaths;
-}
