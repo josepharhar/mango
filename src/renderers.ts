@@ -11,9 +11,11 @@ function wrapBody(body: string): string {
       margin: 0;
       padding: 0;
     }
-    a {
-      display: grid;
-      height: 100%;
+    a, a>h2 {
+      display: inline;
+    }
+    button {
+      display: inline;
     }
     div.imgcontainer {
       display: grid;
@@ -27,7 +29,7 @@ function wrapBody(body: string): string {
     </style>
   </head>
   <body>
-    <a href="/"><p>home</p></a>
+    <a href="/"><h2>home</h2></a>
     ${body}
   </body>
   `;
@@ -70,6 +72,7 @@ export function renderReader(relativePathUnencoded: string): string {
   return wrapBody(`
   <body>
     <button id="cssbutton">css</button>
+    <a href="${encodeURI(path.join('/prev', relativePathUnencoded))}"><h2>prev</h2></a>
     <a href="${encodeURI(path.join('/next', relativePathUnencoded))}">
       <div id="imgcontainer" class="imgcontainer">
         <img src="${encodeURI(path.join('/file', relativePathUnencoded))}">

@@ -81,29 +81,54 @@ server.use('/file', async (req, res) => {
 });
 
 let paths: Array<string> = null;
-server.use('/next', async (req, res) => {
+
+async function prevNextHandler(req, res, prevOrNext: 'prev'|'next') {
   const {relativePath} = parseUrl(servePath, req.url);
   const index = paths.indexOf(relativePath);
   if (index < 0) {
-    res.writeHead(400, {'content-type': 'text/plain'});
-    res.end('failed to find /next for path: ' + relativePath);
+    res.writeHead(400, {'content-type': 'text/plain'})
+    res.end('failed to find /prev for path: ' + relativePath);
     return;
   }
 
-  const nextIndex = index >= paths.length ? 0 : index + 1;
+  let nextIndex = null;
+  if (prevOrNext === 'next') {
+    nextIndex = index >= paths.length
+      ? 0
+      : index + 1;
+  } else {
+    nextIndex = index === 0
+      ? paths.length - 1
+      : index - 1;
+  }
   const nextPath = paths[nextIndex];
 
   res.writeHead(307, {
     'content-type': 'text/plain',
     'location': encodeURI(path.join('/browse', nextPath))
   });
-  res.end('/next redirecting'
+  res.end('redirecting'
     + '\n  from: ' + relativePath
     + '\n    to: ' + nextPath);
-});
+}
+
+server.use('/next', (req, res) => prevNextHandler(req, res, 'next'));
+server.use('/prev', (req, res) => prevNextHandler(req, res, 'prev'));
 
 (async () => {
   console.log('scanning for files on path "' + servePath + '" ...');
-  paths = await getRelativeFilepathsInDir(servePath, '/');
+  const allowedExtensions = [
+    'jpeg',
+    'png',
+    'jpg'
+  ];
+  paths = (await getRelativeFilepathsInDir(servePath, '/'))
+    .filter(path => {
+      for (const allowedExtension of allowedExtensions) {
+        if (path.endsWith(allowedExtension))
+          return true;
+      }
+      return false;
+    });
   server.listen(port, () => console.log('listening on port ' + port + ', serving path: ' + servePath));
 })();
