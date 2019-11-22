@@ -23,13 +23,16 @@ if (!servePath) {
 const server = express();
 
 server.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
+  console.log(`${req.method} ${req.url}`
+    + '\n    ' + decodeURIComponent(req.url));
   next();
 });
 
 server.get('/', async (req, res) => {
   res.writeHead(200, {'content-type': 'text/html'});
-  res.end(indexTemplate(await getHistory()));
+  const history = await getHistory();
+  console.log('  history: ' + JSON.stringify(history));
+  res.end(indexTemplate(/*await getHistory()*/history));
 });
 
 server.use('/browse', async (req, res) => {
@@ -47,6 +50,7 @@ server.use('/browse', async (req, res) => {
   }
 
   if (stats.isDirectory()) {
+    console.log('  rendering directory');
     // read the directory and output the contents
     let dirents = null;
     try {
@@ -60,9 +64,14 @@ server.use('/browse', async (req, res) => {
     res.end(renderDir(relativePath, dirents));
 
   } else {
+    // TODO write to history
+    console.log('  rendering file reader');
+    console.log('  relativePath: ' + relativePath);
     // send a webpage which embeds the file!
     res.writeHead(200, {'content-type': 'text/html'});
     res.end(renderReader(relativePath));
+    console.log('  adding to history: ' + relativePath);
+    await addToHistory(relativePath);
   }
 });
 
@@ -86,7 +95,7 @@ server.use('/next', async (req, res) => {
 
   res.writeHead(307, {
     'content-type': 'text/plain',
-    'location': `/browse/${encodeURIComponent(nextPath)}`
+    'location': encodeURI(path.join('/browse', nextPath))
   });
   res.end('/next redirecting'
     + '\n  from: ' + relativePath

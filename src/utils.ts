@@ -21,8 +21,7 @@ export async function getRelativeFilepathsInDir(rootpath: string, currentpath: s
 
 export function parseUrl(servePath: string, reqUrl: string) {
   const parsedUrl = url.parse(reqUrl);
-  console.log('requrl: ' + reqUrl);
-  const relativePath = decodeURIComponent(parsedUrl.pathname);
+  const relativePath = decodeURI(parsedUrl.pathname);
   // TODO make sure relativePath doesnt use .. for secuutiry
   const absolutePath = path.join(servePath, relativePath);
   return {relativePath, absolutePath};

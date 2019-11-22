@@ -1,13 +1,13 @@
 import * as fs from 'fs';
 
-import {Mutex} from './mutex';
+//import {Mutex} from './mutex';
 
 const historyFilepath = './history.json';
-const historyFileMutex = new Mutex();
+//const historyFileMutex = new Mutex();
 
 export async function getHistory(): Promise<Array<string>> {
   const resultPromise: Promise<Array<string>> = new Promise(async resolve => {
-    await historyFileMutex.acquire();
+    //await historyFileMutex.acquire();
     const accessError = await new Promise(resolve => {
       fs.access(historyFilepath, fs.constants.R_OK, error => {
         resolve(error);
@@ -38,7 +38,7 @@ export async function getHistory(): Promise<Array<string>> {
   });
   resultPromise.then(() => {
     // TODO this pattern sucks
-    historyFileMutex.release();
+    //historyFileMutex.release();
   });
   return resultPromise;
 }
@@ -46,8 +46,17 @@ export async function getHistory(): Promise<Array<string>> {
 export async function addToHistory(line: string) {
   const history = await getHistory();
   const resultPromise = new Promise(async resolve => {
-    await historyFileMutex.acquire();
+    //await historyFileMutex.acquire();
+    
+    if (history.length > 25)
+      history.shift();
+
+    const repeatIndex = history.indexOf(line);
+    if (repeatIndex >= 0)
+      history.splice(repeatIndex, 1);
+
     history.push(line);
+
     fs.writeFile(historyFilepath, JSON.stringify(history, null, 2), error => {
       if (error)
         console.log('failed to write to history.json:\n' + error);
@@ -56,7 +65,7 @@ export async function addToHistory(line: string) {
   });
   resultPromise.then(() => {
     // TODO this pattern sucks
-    historyFileMutex.release();
+    //historyFileMutex.release();
   });
   return resultPromise;
 }

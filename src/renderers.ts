@@ -1,56 +1,86 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-export function indexTemplate(history: Array<string>) {
+function wrapBody(body: string): string {
   return `
   <!DOCTYPE html>
   <head>
     <title>mango</title>
+    <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    a {
+      display: grid;
+      height: 100%;
+    }
+    div.imgcontainer {
+      display: grid;
+      height: 100%;
+    }
+    div.imgcontainer > img {
+      max-width: 100%;
+      max-height: 100vh;
+      margin: auto;
+    }
+    </style>
   </head>
   <body>
-    <h2>last files:</h2>
-    ${history.map(file => `<div>${file}</div>`)}
-    <h2>browse:</h2>
-    <a href="/browse">browse</a>
+    <a href="/"><p>home</p></a>
+    ${body}
   </body>
   `;
 }
 
-export function renderDir(relativePathUnencoded: string, dirents: Array<fs.Dirent>): string {
-  const relativePath = encodeURIComponent(relativePathUnencoded);
+export function indexTemplate(history: Array<string>) {
+  const historyListHtml = history
+    .map(historyPath => {
+      return `<a href=${encodeURI(path.join('/browse', historyPath))}>${historyPath}</a>`;
+    }).reduce((accumulator, currentValue) => {
+      return currentValue + '\n' + accumulator;
+    });
+  return wrapBody(`
+  <body>
+    <a href="/browse"><h2>browse</h2></a>
+    <h2>last files:</h2>
+    ${historyListHtml}
+  </body>
+  `);
+}
 
+export function renderDir(relativePathUnencoded: string, dirents: Array<fs.Dirent>): string {
   const contents = dirents.map(dirent => {
     if (dirent.isDirectory()) {
-      return `<div><a href="${path.join('/browse', relativePath, dirent.name)}">${dirent.name}/</a></div>`;
+      return `<div><a href="${encodeURI(path.join('/browse', relativePathUnencoded, dirent.name))}">${dirent.name}/</a></div>`;
     }
-    return `<div><a href="${path.join('/browse', relativePath, dirent.name)}">${dirent.name}</a></div>`;
+    return `<div><a href="${encodeURI(path.join('/browse', relativePathUnencoded, dirent.name))}">${dirent.name}</a></div>`;
   }).reduce((accumulator, currentValue) => accumulator + currentValue);
 
-  return `
-  <!DOCTYPE html>
-  <head>
-    <title>mango</title>
-  </head>
+  return wrapBody(`
   <body>
     <h2>${relativePathUnencoded}</h2>
     <h3>${dirents.length} files</h3>
     ${contents}
   </body>
-  `;
+  `);
 }
 
 export function renderReader(relativePathUnencoded: string): string {
-  const relativePath = encodeURIComponent(relativePathUnencoded);
-  return `
-  <!DOCTYPE html>
-  <head>
-    <title>mango</title>
-  </head>
+  return wrapBody(`
   <body>
-    <a href="/next/${relativePath}">
-      <img src="/file/${relativePath}"></img>
+    <button id="cssbutton">css</button>
+    <a href="${encodeURI(path.join('/next', relativePathUnencoded))}">
+      <div id="imgcontainer" class="imgcontainer">
+        <img src="${encodeURI(path.join('/file', relativePathUnencoded))}">
+      </div>
     </a>
+    <script>
+      document.getElementById('cssbutton').addEventListener('click', () => {
+        document.getElementById('imgcontainer').classList.toggle('imgcontainer');
+      });
+    </script>
   </body>
-  `;
+  `);
 }
 
