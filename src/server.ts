@@ -13,7 +13,7 @@ import {parseUrl, getRelativeFilepathsInDir} from './utils';
 const statPromise = util.promisify(fs.stat);
 const readdirPromise = util.promisify(fs.readdir);
 
-const port = 8000;
+const port = process.env.PORT || 8000;
 const servePath = process.argv[2];
 if (!servePath) {
   console.log('no servePath provided: ' + process.argv[2]);
