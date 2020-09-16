@@ -14,14 +14,17 @@ export async function getHistory(): Promise<Array<string>> {
       });
     });
     if (accessError) {
-      console.log('failed to access history.json:\n' + accessError);
+      // @ts-ignore
+      if (accessError.code !== 'ENOENT')
+        console.log('failed to access history.json:\n' + accessError);
       resolve([]);
       return;
     }
 
     fs.readFile(historyFilepath, 'utf8', (error, data) => {
       if (error) {
-        console.log('failed to read history.json:\n' + error);
+        if (error.code !== 'ENOENT')
+          console.log('failed to read history.json:\n' + error);
         resolve([]);
         return;
       }

@@ -34,12 +34,17 @@ function wrapBody(body: string): string {
 }
 
 export function indexTemplate(history: Array<string>) {
-  const historyListHtml = history
-    .map(historyPath => {
-      return `<div><a href=${encodeURI(path.join('/browse', historyPath))}>${historyPath}</a></div>`;
-    }).reduce((accumulator, currentValue) => {
-      return currentValue + '\n' + accumulator;
-    });
+  let historyListHtml;
+  if (history.length) {
+    historyListHtml = history
+      .map(historyPath => {
+        return `<div><a href=${encodeURI(path.join('/browse', historyPath))}>${historyPath}</a></div>`;
+      }).reduce((accumulator, currentValue) => {
+        return currentValue + '\n' + accumulator;
+      });
+  } else {
+    historyListHtml = '<p>no history</p>';
+  }
   return wrapBody(`
   <a href="/"><h2>home</h2></a>
   <a href="/browse"><h2>browse</h2></a>
