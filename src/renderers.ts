@@ -22,8 +22,11 @@ function wrapBody(body: string): string {
     }
     div.imgcontainer > img {
       max-width: 100%;
-      max-height: 100vh;
+      /*max-height: 100vh;*/
       margin: auto;
+    }
+    body.imgcontainer {
+      max-height: 100vh;
     }
     </style>
   </head>
@@ -85,7 +88,7 @@ export function renderReader(relativePathUnencoded: string): string {
     </a>
     <script>
       document.getElementById('cssbutton').addEventListener('click', () => {
-        document.getElementById('imgcontainer').classList.toggle('imgcontainer');
+        document.body.classList.toggle('imgcontainer');
       });
     </script>
   </body>
